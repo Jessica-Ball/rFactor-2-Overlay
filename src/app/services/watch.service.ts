@@ -30,56 +30,68 @@ export class WatchService {
 
     // fetch session data
     if (environment.production) {
-      setInterval(() => {
-        this._sessionObservable().subscribe(session => {
-
-          // reset standings if new session
-          if (this._sessionData && this._sessionData.session !== session.session) {
-            this.standingsService.reset();
-          }
-
-          this._sessionData = session;
-        });
-      }, this.DATA_REFRESH_RATE);
+      this._startSessionCycle();
     }
 
-    return Observable.create(observer => {
+    return Observable.create((observer: Observer<Object>) => {
       setInterval(() => {
 
         // test data
         if (!environment.production) {
-          this.standingsService.updateStandings(sampleStandingsData);
-          return observer.next({
-            session_info: sampleSessionData,
-            standings: this.standingsService.currentStandings,
-            focused_driver: this.standingsService.focusedDriver,
-            overall_best_lap: this.standingsService.overallBestLap
-          });
+          return this._fakeNextSessionData(observer);
         }
 
-        // empty or invalid session, return null data
-        if (this._sessionData === undefined || this._sessionData.session === 'INVALID') {
-          return observer.next({
-            session_info: null,
-            standings: [],
-            focused_driver: null,
-            overall_best_lap: null
-          });
-        }
-
-        // live data
-        this._standingsObservable().subscribe(standings => {
-          this.standingsService.updateStandings(standings);
-          const data = {
-            session_info: this._sessionData,
-            standings: this.standingsService.currentStandings,
-            focused_driver: this.standingsService.focusedDriver,
-            overall_best_lap: this.standingsService.overallBestLap
-          };
-          observer.next(data);
-        });
-
+        return this._nextSessionData(observer);
       }, this.DATA_REFRESH_RATE);
+    });
+  }
+
+  _startSessionCycle(): void {
+    setInterval(() => {
+      this._sessionObservable().subscribe(session => {
+
+        // reset standings if new session
+        if (this._sessionData && this._sessionData.session !== session.session) {
+          this.standingsService.reset();
+        }
+
+        this._sessionData = session;
+      });
+    }, this.DATA_REFRESH_RATE);
+  }
+
+  _nextSessionData(observer: Observer<Object>) {
+
+    // empty or invalid session, return null data
+    if (this._sessionData === undefined || this._sessionData.session === 'INVALID') {
+      return observer.next({
+        session_info: null,
+        standings: [],
+        focused_driver: null,
+        overall_best_lap: null
+      });
+    }
+
+    // live data
+    this._standingsObservable().subscribe(standings => {
+      this.standingsService.updateStandings(standings);
+      const data = {
+        session_info: this._sessionData,
+        standings: this.standingsService.currentStandings,
+        focused_driver: this.standingsService.focusedDriver,
+        overall_best_lap: this.standingsService.overallBestLap
+      };
+      observer.next(data);
+    });
+  }
+
+  _fakeNextSessionData(observer: Observer<Object>): void {
+    this.standingsService.updateStandings(sampleStandingsData);
+    observer.next({
+      session_info: sampleSessionData,
+      standings: this.standingsService.currentStandings,
+      focused_driver: this.standingsService.focusedDriver,
+      overall_best_lap: this.standingsService.overallBestLap
     });
   }
 
