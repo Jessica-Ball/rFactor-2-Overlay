@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Http } from '@angular/http';
+import { map } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 
@@ -19,15 +20,11 @@ export class ConfigService {
     }
 
     public load(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.http.get(environment.settings_url).map(res => res.json()).catch((error: any): any => {
-                console.log('Failed to load config file');
-                reject(error);
-            }).subscribe(response => {
-                this._config = response;
-                console.log(this._config);
-                resolve();
-            });
+        return this.http.get(environment.settings_url).pipe(
+            map(res => res.json())
+        ).toPromise().then(response => {
+            this._config = response;
+            console.log(this._config);
         });
     }
 }

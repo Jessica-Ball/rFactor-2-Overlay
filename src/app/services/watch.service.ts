@@ -1,10 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Http, Response } from '@angular/http';
 // import * as SocketIO from 'socket.io-client';
-import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
+import { Observable, Observer } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { StandingsService } from './standings.service';
 import { environment } from '../../environments/environment';
@@ -98,15 +96,19 @@ export class WatchService {
   _standingsObservable(): Observable<any> {
     return this.http
       .get(`${this.BASE_URL}/standings`)
-      .map(this._mapResponse)
-      .catch(this._handleError);
+      .pipe(
+        map(this._mapResponse),
+        catchError(this._handleError)
+      );
   }
 
   _sessionObservable(): Observable<any> {
     return this.http
       .get(`${this.BASE_URL}/sessionInfo`)
-      .map(this._mapResponse)
-      .catch(this._handleError);
+      .pipe(
+        map(this._mapResponse),
+        catchError(this._handleError)
+      );
   }
 
   _mapResponse(response: Response): any {
